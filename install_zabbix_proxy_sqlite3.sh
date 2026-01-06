@@ -23,7 +23,8 @@ else
     # Fallback if os-release is missing (unlikely on Debian 13)
     OS_CODENAME=$(lsb_release -sc)
 fi
-ZABBIX_SERVER_IP="10.10.10.50" # IP do Zabbix Server para onde o proxy aponta
+# IP do Zabbix Server para onde o proxy aponta (Argumento 1 ou Padrão)
+ZABBIX_SERVER_IP=${1:-"10.10.10.50"}
 DB_PATH="/var/lib/zabbix/zabbix_proxy.db"
 
 # Cores para output
@@ -77,7 +78,13 @@ log_info "Configurando /etc/zabbix/zabbix_proxy.conf..."
 CONF_FILE="/etc/zabbix/zabbix_proxy.conf"
 
 # Backup do arquivo original
-cp "$CONF_FILE" "${CONF_FILE}.bak"
+# Backup do arquivo original (apenas se não existir backup prévio)
+if [ ! -f "${CONF_FILE}.bak" ]; then
+    cp "$CONF_FILE" "${CONF_FILE}.bak"
+    log_info "Backup criado em ${CONF_FILE}.bak"
+else
+    log_info "Backup já existente. Mantendo original."
+fi
 
 # Ajustes de configuração
 # Definindo modo passivo por padrão (ProxyMode=0 é ativo, 1 é passivo). 
@@ -123,3 +130,6 @@ else
     echo "tail -n 20 /var/log/zabbix/zabbix_proxy.log"
     exit 1
 fi
+
+# --- 7. Limpeza ---
+rm -f "$TEMP_DEB"

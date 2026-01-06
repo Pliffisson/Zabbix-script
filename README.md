@@ -1,84 +1,72 @@
-# Documentação: Script de Instalação do Zabbix Proxy (SQLite3)
+# Documentação: Scripts de Instalação Zabbix (Agent 2 & Proxy SQLite3)
 
 ![Zabbix](https://img.shields.io/badge/Zabbix-7.0%20LTS-red?style=for-the-badge&logo=zabbix)
 ![OS](https://img.shields.io/badge/Debian-13%20(Trixie)-A81D33?style=for-the-badge&logo=debian&logoColor=white)
 ![Bash](https://img.shields.io/badge/Shell_Script-Bash-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white)
 
-
-Este documento detalha o funcionamento, pré-requisitos e uso do script `install_zabbix_proxy_sqlite3.sh`, projetado para automatizar a instalação e configuração de um Zabbix Proxy com banco de dados SQLite3 no Debian 13 (Trixie).
+Este repositório contém scripts automatizados para instalação e configuração do **Zabbix Agent 2** e **Zabbix Proxy (SQLite3)** no Debian 13 (Trixie).
 
 ## 📋 Visão Geral
 
-O script realiza a instalação completa do Zabbix Proxy, desde a configuração dos repositórios até o ajuste fino dos arquivos de configuração e inicialização do serviço. Ele é ideal para ambientes onde se deseja um deploy rápido e padronizado de proxies.
+Os scripts realizam a instalação completa, desde a configuração dos repositórios oficiais até o ajuste fino dos arquivos de configuração e inicialização dos serviços.
 
-### O que o script faz?
-
-1.  **Verificação de Ambiente**: Garante que o script está rodando como `root`.
-2.  **Instalação de Dependências**: Instala pacotes essenciais como `wget`, `gnupg` e `lsb-release`.
-3.  **Configuração de Repositório**: Adiciona o repositório oficial do Zabbix 7.0 LTS.
-4.  **Instalação do Proxy**: Instala os pacotes `zabbix-proxy-sqlite3` e scripts SQL.
-5.  **Configuração**:
-    *   Define o IP do Zabbix Server.
-    *   Configura o caminho do banco de dados SQLite3.
-    *   (Opcional) Ajusta Hostname e Modo do Proxy.
-6.  **Inicialização**: Cria diretórios necessários, ajusta permissões e inicia o serviço via `systemd`.
+### Funcionalidades Principais
+*   **Detecção Automática de SO**: Suporte robusto para detecção do codinome do Debian.
+*   **Backup Seguro**: Preserva o arquivo de configuração original (`.bak`) mesmo se o script for rodado múltiplas vezes.
+*   **Flexibilidade**: Aceita o IP do servidor como argumento na linha de comando.
+*   **Limpeza**: Remove arquivos temporários automoticamente após a instalação.
 
 ## 🚀 Como Usar
 
 ### Pré-requisitos
-*   Sistema Operacional: Debian 13 (Trixie) ou compatível.
-*   Acesso à Internet (para baixar pacotes).
+*   Sistema Operacional: Debian 13 (Trixie) ou compatível via fallback.
+*   Acesso à Internet.
 *   Privilégios de superusuário (root).
 
-### Execução
+### 1. Instalação do Zabbix Agent 2
 
-1.  Baixe ou crie o arquivo `install_zabbix_proxy_sqlite3.sh` no servidor.
-2.  Dê permissão de execução:
-    ```bash
-    chmod +x install_zabbix_proxy_sqlite3.sh
-    ```
-3.  Execute o script:
-    ```bash
-    ./install_zabbix_proxy_sqlite3.sh
-    ```
+`install_zabbix_agent2.sh`
 
-## ⚙️ Configurações e Variáveis
+```bash
+chmod +x install_zabbix_agent2.sh
+# Uso: ./script.sh [IP_DO_SERVER]
+./install_zabbix_agent2.sh 192.168.1.50
+```
+Se nenhum argumento for passado, o IP padrão `10.10.10.50` será usado.
 
-As principais variáveis estão definidas no início do script e podem ser alteradas conforme a necessidade do ambiente:
+### 2. Instalação do Zabbix Proxy (SQLite3)
+
+`install_zabbix_proxy_sqlite3.sh`
+
+```bash
+chmod +x install_zabbix_proxy_sqlite3.sh
+# Uso: ./script.sh [IP_DO_SERVER]
+./install_zabbix_proxy_sqlite3.sh 192.168.1.50
+```
+*   Configura o banco de dados SQLite3 automaticamente em `/var/lib/zabbix/zabbix_proxy.db`.
+*   O diretório e permissões são ajustados automaticamente.
+
+## ⚙️ Variáveis e Configurações
 
 | Variável | Valor Padrão | Descrição |
 | :--- | :--- | :--- |
-| `ZABBIX_VERSION` | `"7.0"` | Versão do Zabbix a ser instalada. |
-| `ZABBIX_SERVER_IP` | `"10.10.10.50"` | **Importante**: IP ou DNS do Zabbix Server que gerenciará este proxy. |
-| `DB_PATH` | `/var/lib/zabbix/zabbix_proxy.db` | Caminho completo onde o arquivo do banco SQLite será criado. |
-
-### Personalizações Comuns
-
-*   **Alterar o IP do Server**: Edite a linha `ZABBIX_SERVER_IP="10.10.10.50"` com o IP correto do seu servidor Zabbix.
-*   **Modo do Proxy**: O script mantém o padrão do pacote (geralmente Ativo). Para mudar para Passivo, descomente a linha `# sed -i 's/^ProxyMode=.*/ProxyMode=1/' ...` (ajuste para 1 se necessário).
-*   **Hostname**: O script usa o hostname da máquina por padrão. Para forçar um nome específico, descomente e ajuste a linha do `Hostname=`.
-
-## 🛠️ Estrutura do Script
-
-### Detecção de SO
-O script tenta detectar o codinome do sistema operacional (ex: `trixie`) automaticamente usando `/etc/os-release` ou `lsb_release`. Isso garante que o repositório correto seja baixado.
-
-### Banco de Dados (SQLite3)
-Diferente de instalações com MySQL/PostgreSQL, o SQLite3 não requer um serviço de banco de dados separado rodando. O banco é um arquivo local. O script garante que o diretório desse arquivo exista e pertença ao usuário `zabbix`.
+| `ZABBIX_VERSION` | `"7.0"` | Versão do Zabbix LTS. |
+| `ZABBIX_SERVER_IP` | `10.10.10.50` | IP do Zabbix Server. Pode ser sobrescrito pelo 1º argumento. |
+| `DB_PATH` | `/var/lib/zabbix/...` | (Apenas Proxy) Caminho do banco SQLite3. |
 
 ## ✅ Verificação Pós-Instalação
 
-Ao final da execução, o script exibe um resumo com:
-*   Status do serviço (`active (running)`).
-*   Versão instalada.
-*   Caminho do banco de dados.
-*   IP do Server configurado.
+Ao final, os scripts exibem um resumo com o status do serviço e versão instalada.
 
-Para verificar os logs em caso de erro:
+Para verificar os logs:
 ```bash
+# Agent 2
+tail -f /var/log/zabbix/zabbix_agent2.log
+
+# Proxy
 tail -f /var/log/zabbix/zabbix_proxy.log
 ```
 
 ---
 **Autor**: Pliffisson Gomes
-**Data**: Novembro/2025
+**Data atualizada**: Janeiro/2026

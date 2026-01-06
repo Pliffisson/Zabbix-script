@@ -14,8 +14,18 @@ set -e
 
 # --- Variáveis de Configuração ---
 ZABBIX_VERSION="7.0"
-OS_CODENAME=$(lsb_release -sc)
-ZABBIX_SERVER_IP="10.10.10.50" # IP do Zabbix Server ou Proxy
+ZABBIX_VERSION="7.0"
+# Detect OS Codename safely
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_CODENAME=${VERSION_CODENAME}
+else
+    # Fallback if os-release is missing
+    OS_CODENAME=$(lsb_release -sc 2>/dev/null || echo "trixie")
+fi
+
+# IP do Zabbix Server ou Proxy (Argumento 1 ou Padrão)
+ZABBIX_SERVER_IP=${1:-"10.10.10.50"}
 HOSTNAME_ITEM="system.hostname" # Item padrão para hostname, ou defina um estático
 
 # Cores para output
@@ -68,7 +78,13 @@ log_info "Configurando /etc/zabbix/zabbix_agent2.conf..."
 CONF_FILE="/etc/zabbix/zabbix_agent2.conf"
 
 # Backup do arquivo original
-cp "$CONF_FILE" "${CONF_FILE}.bak"
+# Backup do arquivo original (apenas se não existir backup prévio)
+if [ ! -f "${CONF_FILE}.bak" ]; then
+    cp "$CONF_FILE" "${CONF_FILE}.bak"
+    log_info "Backup criado em ${CONF_FILE}.bak"
+else
+    log_info "Backup já existente. Mantendo original."
+fi
 
 # Configurando Server (Checagens passivas)
 sed -i "s/^Server=.*/Server=${ZABBIX_SERVER_IP}/" "$CONF_FILE"
@@ -101,3 +117,6 @@ else
     echo "tail -n 20 /var/log/zabbix/zabbix_agent2.log"
     exit 1
 fi
+
+# --- 7. Limpeza ---
+rm -f "$TEMP_DEB"
